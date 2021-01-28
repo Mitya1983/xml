@@ -230,7 +230,7 @@ std::string xml::XmlElement::_createCloseTag(bool beautify) const
 {
     std::string returnValue = "</";
     returnValue += m_name;
-    returnValue += "/>";
+    returnValue += ">";
     if (beautify){
         returnValue += "\n";
     }
