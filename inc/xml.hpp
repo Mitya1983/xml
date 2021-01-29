@@ -11,6 +11,8 @@ namespace xml {
 
 class XmlElement
 {
+    friend std::ostream &operator<<(std::ostream &output, const XmlElement &xmlElement);
+    friend std::stringstream &operator<<(std::stringstream &output, const XmlElement &xmlElement);
 public:
     //CONSTRUCTORS
     XmlElement(std::string_view name);
@@ -55,6 +57,8 @@ public:
 
 class Xml
 {
+    friend std::ostream &operator<<(std::ostream &output, const Xml &xmlElement);
+    friend std::stringstream &operator<<(std::stringstream &output, const Xml &xmlElement);
 public:
     //CONSTRUCTORS
     Xml(XmlElement &&root);
@@ -70,7 +74,6 @@ public:
 
     //API
     std::string toString() const;
-    void saveToFile(const std::filesystem::path filePath) const;
     auto find (const std::string &name) {return m_root.find(name);};
     auto equal_range (const std::string &name) {return m_root.equal_range(name);};
 
@@ -81,10 +84,19 @@ protected:
 
 private:
     XmlElement m_root;
+    bool m_beautifyOutput;
     //SETTERS AND GETTERS
 public:
+    void setBeautifyOutput() {m_beautifyOutput = true;}
+
     const XmlElement &root() noexcept {return m_root;}
+
 };
+
+std::ostream &operator<<(std::ostream &output, const XmlElement &xmlElement);
+std::stringstream &operator<<(std::stringstream &output, const XmlElement &xmlElement);
+std::ostream &operator<<(std::ostream &output, const Xml &xmlElement);
+std::stringstream &operator<<(std::stringstream &output, const Xml &xmlElement);
 
 } // namespace zestad::xml
 #endif // XML_HPP

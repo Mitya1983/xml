@@ -329,21 +329,14 @@ xml::Xml::Xml(const std::filesystem::path &xmlFile) :
 std::string xml::Xml::toString() const
 {
     std::string returnValue = xmlHeader;
-    returnValue += m_root.toString_b();
+    if (m_beautifyOutput){
+        returnValue += m_root.toString_b();
+    }
+    else{
+        returnValue += m_root.toString();
+    }
 
     return returnValue;
-}
-
-void xml::Xml::saveToFile(const std::filesystem::path filePath) const
-{
-    std::ofstream outputFile;
-    outputFile.open(filePath, std::ios::trunc);
-    if (!outputFile.is_open()){
-        //NOTE: Check implementation on windows
-        std::string msg = "Could not create xml file" + filePath.string() + ": " + std::error_code(errno, std::system_category()).message();
-        throw std::fstream::failure(msg);
-    }
-    outputFile << toString();
 }
 
 std::string xml::Xml::getValueByTag(std::string_view xmlString, std::string_view tagName, size_t initialPos)
@@ -388,4 +381,32 @@ std::string xml::Xml::getXmlDataByTag(std::string_view xmlString, std::string_vi
     }
 
     return std::string(xmlString.substr(startPos, endPos - startPos));
+}
+
+std::ostream &xml::operator<<(std::ostream &output, const xml::XmlElement &xmlElement)
+{
+    output << xmlElement.toString_b();
+
+    return output;
+}
+
+std::stringstream &xml::operator<<(std::stringstream &output, const xml::XmlElement &xmlElement)
+{
+    output << xmlElement.toString_b();
+
+    return output;
+}
+
+std::ostream &xml::operator<<(std::ostream &output, const xml::Xml &xmlElement)
+{
+    output << xmlElement.toString();
+
+    return output;
+}
+
+std::stringstream &xml::operator<<(std::stringstream &output, const xml::Xml &xmlElement)
+{
+    output << xmlElement.toString();
+
+    return output;
 }
