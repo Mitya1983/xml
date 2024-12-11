@@ -1,8 +1,8 @@
 #include "xml.hpp"
 
-#include <assert.h>
 #include <fstream>
 #include <filesystem>
+#include <cassert>
 
 #if defined (_WIN32) || defined(_WIN64)
 #include <cerrno.h>
@@ -14,35 +14,34 @@ const std::string xmlHeader = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalo
 
 } // namespace
 
-xml::XmlElement::XmlElement(std::string_view name) :
-    m_name(name)
+mt::xml::XmlElement::XmlElement(std::string p_name) :
+    m_name(std::move(p_name))
 {
 
 }
 
-xml::XmlElement::XmlElement(std::string_view name, std::string_view value) :
-    m_name(name),
-    m_value(value)
+mt::xml::XmlElement::XmlElement(std::string p_name, std::string p_value) :
+    m_name(std::move(p_name)),
+    m_value(std::move(p_value))
 {
 
 }
 
-void xml::XmlElement::addElement(xml::XmlElement &&element)
+void mt::xml::XmlElement::addElement(mt::xml::XmlElement &&element)
 {
     assert(m_value.empty() && "XmlElement may comrise either value either child XmlElement");
-    m_childs.emplace_back(std::make_shared<xml::XmlElement>(std::move(element)));
+    m_childs.emplace_back(std::make_shared<mt::xml::XmlElement>(std::move(element)));
 
 }
 
-void xml::XmlElement::addAttribute(std::string_view attributeName, std::string_view attributeValue)
+void mt::xml::XmlElement::addAttribute(std::string_view attributeName, std::string_view attributeValue)
 {
     assert(!attributeName.empty() && "XmlElement: attribute name can't be empty");
     assert(!attributeValue.empty() && "XmlElement: attribute value can't be empty");
     m_attributes.emplace_back(attributeName, attributeValue);
 }
 
-std::shared_ptr<xml::XmlElement> xml::XmlElement::find(const std::string &name)
-{
+auto mt::xml::XmlElement::find(const std::string& name) const -> std::shared_ptr< mt::xml::XmlElement > {
     for (const auto &element : m_childs){
         if (element->name() == name){
             return element;
@@ -51,8 +50,7 @@ std::shared_ptr<xml::XmlElement> xml::XmlElement::find(const std::string &name)
     return nullptr;
 }
 
-std::vector<std::shared_ptr<xml::XmlElement> > xml::XmlElement::equal_range(const std::string &name)
-{
+auto mt::xml::XmlElement::equal_range(const std::string& name) -> std::vector< std::shared_ptr< mt::xml::XmlElement > > {
     std::vector<std::shared_ptr<XmlElement>> result;
     for (const auto &element : m_childs){
         if (element->name() == name){
@@ -62,8 +60,7 @@ std::vector<std::shared_ptr<xml::XmlElement> > xml::XmlElement::equal_range(cons
     return result;
 }
 
-std::string xml::XmlElement::toString() const
-{
+auto mt::xml::XmlElement::toString() const -> std::string {
     std::string returnValue;
 
     returnValue += _createOpenTag(false);
@@ -83,8 +80,7 @@ std::string xml::XmlElement::toString() const
     return returnValue;
 }
 
-std::string xml::XmlElement::toString_b(uint8_t level) const
-{
+auto mt::xml::XmlElement::toString_b(uint8_t level) const -> std::string {
     std::string returnValue;
 
     for (int levelCount = 0; levelCount < level; ++levelCount){
@@ -110,8 +106,7 @@ std::string xml::XmlElement::toString_b(uint8_t level) const
     return returnValue;
 }
 
-xml::XmlElement xml::XmlElement::fromXmlString(std::string_view xmlString)
-{
+auto mt::xml::XmlElement::fromXmlString(std::string_view xmlString) -> mt::xml::XmlElement {
     auto startPos = xmlString.find('<', 0) + 1;
     auto endPos = xmlString.find('>', startPos);
     std::string openTag(xmlString.substr(startPos, endPos - startPos));
@@ -162,7 +157,7 @@ xml::XmlElement xml::XmlElement::fromXmlString(std::string_view xmlString)
                     index = openTag.find('\"', searchStartPos);
                 }
                 if (index == std::string::npos){
-                    throw std::runtime_error("zestad::xml::XmlElement zestad::xml::XmlElement::fromXmlString: xmlData is corrupted due to attribute in tag " + tagName);
+                    throw std::runtime_error("zestad::mt::xml::XmlElement zestad::mt::xml::XmlElement::fromXmlString: xmlData is corrupted due to attribute in tag " + tagName);
                 }
                 ++index;
                 while (((c = openTag.at(index)) != '\'') && ((c = openTag.at(index)) != '\"')){
@@ -178,26 +173,26 @@ xml::XmlElement xml::XmlElement::fromXmlString(std::string_view xmlString)
 //        }
     }
 
-    xml::XmlElement element(tagName);
+    mt::xml::XmlElement element(tagName);
     for (const auto &attribute : l_attributes){
         element.addAttribute(attribute.first, attribute.second);
     }
     if (!selfClosingTag){
         if (!_hasChilds(xmlString, tagName)){
-            element.setValue(xml::Xml::getValueByTag(xmlString, tagName));
+            element.setValue(mt::xml::getValueByTag(xmlString, tagName));
         }
         else{
-            std::string xmlValue = xml::Xml::getValueByTag(xmlString, tagName);
+            std::string xmlValue = mt::xml::getValueByTag(xmlString, tagName);
             for (const auto &l_tagName : element._getOpenTags(xmlValue)){
-                std::string childXmlString = xml::Xml::getXmlDataByTag(xmlValue, l_tagName.first, l_tagName.second);
-                element.addElement(xml::XmlElement::fromXmlString(childXmlString));
+                std::string childXmlString = mt::xml::getXmlDataByTag(xmlValue, l_tagName.first, l_tagName.second);
+                element.addElement(mt::xml::XmlElement::fromXmlString(childXmlString));
             }
         }
     }
     return element;
 }
 
-std::string xml::XmlElement::_createOpenTag(bool beautify) const
+std::string mt::xml::XmlElement::_createOpenTag(bool beautify) const
 {
     std::string returnValue = "<";
     returnValue += m_name;
@@ -226,7 +221,7 @@ std::string xml::XmlElement::_createOpenTag(bool beautify) const
     return returnValue;
 }
 
-std::string xml::XmlElement::_createCloseTag(bool beautify) const
+std::string mt::xml::XmlElement::_createCloseTag(bool beautify) const
 {
     std::string returnValue = "</";
     returnValue += m_name;
@@ -237,7 +232,7 @@ std::string xml::XmlElement::_createCloseTag(bool beautify) const
     return returnValue;
 }
 
-std::vector<std::pair<std::string, size_t>> xml::XmlElement::_getOpenTags(std::string_view xmlData)
+std::vector<std::pair<std::string, size_t>> mt::xml::XmlElement::_getOpenTags(std::string_view xmlData)
 {
     size_t startPos = 0;
     std::vector<std::pair<std::string, size_t>> tagNames;
@@ -276,9 +271,9 @@ std::vector<std::pair<std::string, size_t>> xml::XmlElement::_getOpenTags(std::s
     return tagNames;
 }
 
-bool xml::XmlElement::_hasChilds(std::string_view xmlData, std::string_view tagName)
+bool mt::xml::XmlElement::_hasChilds(std::string_view xmlData, std::string_view tagName)
 {
-    if (Xml::getValueByTag(xmlData, tagName).find('<') != std::string::npos){
+    if (mt::xml::getValueByTag(xmlData, tagName).find('<') != std::string::npos){
         return true;
     }
 
@@ -286,28 +281,28 @@ bool xml::XmlElement::_hasChilds(std::string_view xmlData, std::string_view tagN
 }
 
 
-void xml::XmlElement::setValue(std::string_view value)
+void mt::xml::XmlElement::setValue(std::string_view value)
 {
     assert(m_childs.empty() && "XmlElement may comrise either value either child XmlElement");
     m_value = value;
 }
 
-xml::Xml::Xml(xml::XmlElement &&root) :
+mt::xml::Xml(mt::xml::XmlElement &&root) :
     m_root(std::move(root))
 {
 
 }
 
-xml::Xml::Xml(const std::string &xmlData) :
+mt::xml::Xml(const std::string &xmlData) :
     m_root("")
 {
     auto headerEndPos = xmlData.find("?>") + 2;
     std::string xmlString = xmlData.substr(headerEndPos);
 
-    m_root = xml::XmlElement::fromXmlString(xmlString);
+    m_root = mt::xml::XmlElement::fromXmlString(xmlString);
 }
 
-xml::Xml::Xml(const std::filesystem::path &xmlFile) :
+mt::xml::Xml(const std::filesystem::path &xmlFile) :
     m_root("")
 {
     std::ifstream file;
@@ -321,12 +316,12 @@ xml::Xml::Xml(const std::filesystem::path &xmlFile) :
     stream << file.rdbuf();
     std::string xmlData = stream.str();
 
-    *this = xml::Xml(xmlData);
+    *this = mt::xml::Xml(xmlData);
 
     file.close();
 }
 
-std::string xml::Xml::toString() const
+std::string mt::xml::toString() const
 {
     std::string returnValue = xmlHeader;
     if (m_beautifyOutput){
@@ -339,7 +334,7 @@ std::string xml::Xml::toString() const
     return returnValue;
 }
 
-std::string xml::Xml::getValueByTag(std::string_view xmlString, std::string_view tagName, size_t initialPos)
+std::string mt::xml::Xml::getValueByTag(std::string_view xmlString, std::string_view tagName, size_t initialPos)
 {
     std::string openTag("<");
     openTag += tagName;
@@ -361,7 +356,7 @@ std::string xml::Xml::getValueByTag(std::string_view xmlString, std::string_view
     return value;
 }
 
-std::string xml::Xml::getXmlDataByTag(std::string_view xmlString, std::string_view tagName, size_t initialPos)
+std::string mt::xml::Xml::getXmlDataByTag(std::string_view xmlString, std::string_view tagName, size_t initialPos)
 {
     std::string openTag("<");
     openTag += tagName;
@@ -383,28 +378,28 @@ std::string xml::Xml::getXmlDataByTag(std::string_view xmlString, std::string_vi
     return std::string(xmlString.substr(startPos, endPos - startPos));
 }
 
-std::ostream &xml::operator<<(std::ostream &output, const xml::XmlElement &xmlElement)
+std::ostream &mt::xml::operator<<(std::ostream &output, const mt::xml::XmlElement &xmlElement)
 {
     output << xmlElement.toString_b();
 
     return output;
 }
 
-std::stringstream &xml::operator<<(std::stringstream &output, const xml::XmlElement &xmlElement)
+std::stringstream &mt::xml::operator<<(std::stringstream &output, const mt::xml::XmlElement &xmlElement)
 {
     output << xmlElement.toString_b();
 
     return output;
 }
 
-std::ostream &xml::operator<<(std::ostream &output, const xml::Xml &xmlElement)
+std::ostream &mt::xml::operator<<(std::ostream &output, const mt::xml::Xml &xmlElement)
 {
     output << xmlElement.toString();
 
     return output;
 }
 
-std::stringstream &xml::operator<<(std::stringstream &output, const xml::Xml &xmlElement)
+std::stringstream &mt::xml::operator<<(std::stringstream &output, const mt::xml::Xml &xmlElement)
 {
     output << xmlElement.toString();
 

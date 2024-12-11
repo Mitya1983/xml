@@ -7,33 +7,67 @@
 #include <unordered_map>
 #include <filesystem>
 
-namespace xml {
+namespace mt::xml {
 
+    class JsonError final : public std::exception {
+    public:
+        explicit JsonError(uint64_t p_position, char p_unexpected_symbol);
+
+        [[nodiscard]] auto what() const noexcept -> const char * override;
+        [[nodiscard]] auto position() const noexcept -> uint64_t;
+
+    private:
+        std::string m_description;
+        uint64_t m_position;
+    };
+
+    class Attribute {
+      public:
+        Attribute() = default;
+
+        Attribute(const Attribute&) = default;
+        Attribute(Attribute&&) = default;
+        Attribute& operator=(const Attribute&) = default;
+        Attribute& operator=(Attribute&&) = default;
+
+        ~Attribute() = default;
+
+        void setName(std::string p_name);
+        void setValue(std::string p_value);
+
+      [[nodiscard]] auto name() const -> const std::string&;
+      [[nodiscard]] auto value() const -> const std::string&;
+
+      private:
+        [[nodiscard]] static auto fromString(const std::string& p_data, uint64_t& pos);
+
+        std::string m_name;
+        std::string m_value;
+    };
 class XmlElement
 {
     friend std::ostream &operator<<(std::ostream &output, const XmlElement &xmlElement);
     friend std::stringstream &operator<<(std::stringstream &output, const XmlElement &xmlElement);
 public:
-    //CONSTRUCTORS
-    XmlElement(std::string_view name);
-    XmlElement(std::string_view name, std::string_view value);
+    explicit XmlElement(std::string p_name);
+    XmlElement(std::string p_name, std::string p_value);
+
     XmlElement(const XmlElement&) = delete;
     XmlElement(XmlElement&&) = default;
-    //OPERATORS
     XmlElement& operator=(const XmlElement&) = delete;
     XmlElement& operator=(XmlElement&&) = default;
-    //DESTRUCTOR
+
     ~XmlElement() = default;
 
-    //API
     void addElement(XmlElement &&element);
     void addAttribute(std::string_view attributeName, std::string_view attributeValue);
-    std::shared_ptr<XmlElement> find(const std::string &name);
-    std::vector<std::shared_ptr<XmlElement>> equal_range(const std::string &name);
-    std::string toString() const;
-    std::string toString_b(uint8_t level = 0) const;
 
-    static XmlElement fromXmlString(std::string_view xmlString);
+    [[nodiscard]] auto find(const std::string &name) const -> std::shared_ptr<XmlElement>;
+    [[nodiscard]] auto equal_range(const std::string &name) -> std::vector<std::shared_ptr<XmlElement>>;
+    [[nodiscard]] auto toString() const -> std::string;
+    [[nodiscard]] auto toString_b(uint8_t level = 0) const -> std::string;
+
+    [[nodiscard]] static auto fromXmlString(std::string_view xmlString) -> XmlElement;
 
 private:
     std::string m_name;
@@ -41,10 +75,10 @@ private:
     std::vector<std::pair<std::string, std::string>> m_attributes;
     std::vector<std::shared_ptr<XmlElement>> m_childs;
 
-    std::string _createOpenTag(bool beautify) const;
-    std::string _createCloseTag(bool beautify) const;
-    std::vector<std::pair<std::string, size_t> > _getOpenTags(std::string_view xmlData);
-    static bool _hasChilds(std::string_view xmlData, std::string_view tagName);
+    auto _createOpenTag(bool beautify) const -> std::string;
+    auto _createCloseTag(bool beautify) const -> std::string;
+    auto _getOpenTags(std::string_view xmlData) -> std::vector< std::pair< std::string, size_t > >;
+    static auto _hasChilds(std::string_view xmlData, std::string_view tagName) -> bool;
     //SETTERS AND GETTERS
 public:
     void setValue(std::string_view value);
@@ -79,8 +113,6 @@ public:
 
     static std::string getValueByTag(std::string_view xmlString, std::string_view tagName, size_t initialPos = 0);
     static std::string getXmlDataByTag(std::string_view xmlString, std::string_view tagName, size_t initialPos = 0);
-
-protected:
 
 private:
     XmlElement m_root;
